@@ -1,0 +1,13 @@
+# systemd --user unit: ~/.config/systemd/user/jarvis.service
+[Unit]
+Description=Jarvis phone assistant (Nova 2.5 Sonic over Bluetooth HFP)
+After=pipewire.service wireplumber.service
+
+[Service]
+WorkingDirectory=%h/jarvis-sim
+ExecStart=%h/jarvis-sim/.venv/bin/python -m jarvis serve
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

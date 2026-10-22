@@ -1,0 +1,2 @@
+# adb access to Samsung phones over USB for the logged-in user. Change idVendor for other brands.
+SUBSYSTEM=="usb", ATTR{idVendor}=="04e8", MODE="0660", GROUP="plugdev", TAG+="uaccess"

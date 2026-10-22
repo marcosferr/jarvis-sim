@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+# call recordings contain people's voices
+*.wav
+*.pcm
+*.raw

@@ -1,0 +1,2 @@
+strands-agents[bidi]>=1.62
+boto3
