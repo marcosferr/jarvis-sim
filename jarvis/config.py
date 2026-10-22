@@ -1,19 +1,9 @@
 """Settings, read from the environment (see .env.example)."""
 import os
-from pathlib import Path
 
+from .dotenv import load_dotenv
 
-def _load_dotenv():
-    env = Path(__file__).resolve().parent.parent / ".env"
-    if env.exists():
-        for line in env.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, value = line.split("=", 1)
-                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
-
-
-_load_dotenv()
+load_dotenv()
 
 
 def _required(name):
@@ -42,6 +32,12 @@ def _flag(name):
 ANSWER_HIDDEN = _flag("JARVIS_ANSWER_HIDDEN")
 # Off by default: transcripts are what you said on the phone; only log them when debugging.
 DEBUG_TRANSCRIPTS = _flag("JARVIS_DEBUG_TRANSCRIPTS")
+
+# Alert endpoint (POST /alerta). Without a token it stays off. 127.0.0.1 = only this machine;
+# use the Tailscale IP to receive alerts / MCP calls from other machines.
+ALERT_TOKEN = os.environ.get("JARVIS_ALERT_TOKEN", "")
+HTTP_HOST = os.environ.get("JARVIS_HTTP_HOST", "127.0.0.1")
+HTTP_PORT = int(os.environ.get("JARVIS_HTTP_PORT", "8765"))
 
 # PipeWire names the HFP streams bluez_input.<AA_BB_...> / bluez_output.<AA_BB_...>
 BT_NODE_ID = PHONE_BT_ADDR.replace(":", "_")

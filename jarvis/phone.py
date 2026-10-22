@@ -98,21 +98,28 @@ def wait_answered(timeout=45):
     return False
 
 
+def check_incoming():
+    """One poll. If the owner is calling, answer and return True. Other numbers, and hidden ones,
+    are ignored (this waits until they hang up)."""
+    state, num = call_state()
+    if state != 1:
+        return False
+    log("ringing:", num or "(number hidden from adb)")
+    if not num and not ANSWER_HIDDEN:
+        log("hidden number -> ignoring (set JARVIS_ANSWER_HIDDEN=1 to answer these)")
+    elif num and not same_number(num, OWNER_NUMBER):
+        log("not owner -> ignoring")
+    elif answer():
+        return True
+    else:
+        log("ERROR: could not answer")
+    while call_state()[0] != 0:
+        time.sleep(0.5)
+    return False
+
+
 def wait_owner_call():
-    """Block until the owner calls, answer it. Other numbers, and hidden ones, are ignored."""
+    """Block until the owner calls, answer it."""
     log("listening for calls from", OWNER_NUMBER)
-    while True:
-        state, num = call_state()
-        if state == 1:
-            log("ringing:", num or "(number hidden from adb)")
-            if not num and not ANSWER_HIDDEN:
-                log("hidden number -> ignoring (set JARVIS_ANSWER_HIDDEN=1 to answer these)")
-            elif num and not same_number(num, OWNER_NUMBER):
-                log("not owner -> ignoring")
-            elif answer():
-                return
-            else:
-                log("ERROR: could not answer")
-            while call_state()[0] != 0:
-                time.sleep(0.5)
+    while not check_incoming():
         time.sleep(0.5)

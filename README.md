@@ -152,15 +152,59 @@ loginctl enable-linger "$USER"      # que arranque aunque no inicies sesión
 
 El servicio asume que el repo está en `~/jarvis-sim`.
 
+## Que Jarvis te llame: alertas y agentes de IA
+
+Con `serve` (el servicio), Jarvis además escucha en `POST /alerta`. Cada alerta es una llamada a tu
+celular en la que Jarvis te cuenta qué pasó, y después podés seguir hablando con él.
+
+```bash
+TOKEN=$(grep ^JARVIS_ALERT_TOKEN .env | cut -d= -f2)
+curl -X POST http://127.0.0.1:8765/alerta -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" -d '{"mensaje": "Se cayó el servidor de ventas"}'
+```
+
+- **Seguridad:** sin `JARVIS_ALERT_TOKEN` (lo genera `scripts/setup.sh`) el endpoint no arranca. Por
+  defecto solo escucha en `127.0.0.1`; para recibir alertas de otras máquinas poné en
+  `JARVIS_HTTP_HOST` la IP de **Tailscale** de esta PC, no `0.0.0.0`. El mensaje se lo lee el modelo:
+  quien tenga el token decide qué te dice Jarvis.
+- **Anti-spam:** el mismo mensaje dentro de 5 minutos se ignora, la cola tiene 10 lugares y, si no
+  atendés, reintenta una vez a los 90 segundos.
+- **Monitores:** acepta también los campos `message`, `msg`, `text` o `title`, así que sirve como
+  webhook de **Uptime Kuma** o **Grafana** sin adaptar nada (header `Authorization: Bearer <token>`).
+
+### Que un agente te llame (MCP)
+
+`jarvis/mcp_server.py` es un servidor MCP con una herramienta, `llamar_por_telefono(mensaje)`. Con él,
+Claude Code, Claude Desktop o cualquier cliente MCP te llama cuando termina una tarea larga, falla un
+deploy o necesita que decidas algo. Solo reenvía a `/alerta`, así que puede correr en otra máquina.
+
+En la misma PC de Jarvis:
+
+```bash
+claude mcp add jarvis -- ~/jarvis-sim/.venv/bin/python -m jarvis.mcp_server
+```
+
+Desde otra máquina (por ejemplo la notebook, vía Tailscale), con `pip install "mcp>=1.2"` y una copia
+del repo:
+
+```bash
+claude mcp add jarvis -e JARVIS_URL=http://<ip-tailscale-de-la-linux>:8765 \
+  -e JARVIS_ALERT_TOKEN=<token> -- python -m jarvis.mcp_server
+```
+
+Después alcanza con pedirle al agente: *"cuando terminen los tests, llamame y contame el resultado"*.
+
 ## Estructura
 
 ```
 jarvis/
   __main__.py   modos listen / serve / dial
+  alerts.py     endpoint POST /alerta y cola de llamadas salientes
+  mcp_server.py servidor MCP: herramienta llamar_por_telefono para agentes de IA
   phone.py      control de llamadas por adb (estado, atender, marcar, cortar)
   audio.py      cableado de PipeWire (sinks virtuales jarvis_rx / jarvis_tx)
   sonic.py      puente con Nova 2.5 Sonic (Strands BidiAgent) y herramienta "colgar"
-  config.py     configuración desde .env
+  config.py     configuración desde .env (lo carga dotenv.py)
 scripts/
   setup.sh       instalación
   audio_test.py  prueba del audio en los dos sentidos, sin IA

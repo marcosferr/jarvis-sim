@@ -32,6 +32,11 @@ systemctl --user restart wireplumber
 
 echo "== 4. Settings"
 [[ -f .env ]] || { cp .env.example .env; echo "Created .env: edit it before running Jarvis"; }
+if ! grep -qE '^JARVIS_ALERT_TOKEN=.{16,}' .env; then
+  token=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')
+  sed -i '/^JARVIS_ALERT_TOKEN=/d' .env && echo "JARVIS_ALERT_TOKEN=$token" >> .env
+  echo "Generated JARVIS_ALERT_TOKEN in .env (for /alerta and the MCP server)"
+fi
 
 cat <<'MSG'
 
