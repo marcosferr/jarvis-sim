@@ -13,7 +13,7 @@ from strands.bidi.types.events import BidiAudioDeltaEvent, BidiBargeInEvent, Bid
 from strands.bidi.types.media import AudioDelta
 
 from . import audio, phone
-from .config import AWS_PROFILE, AWS_REGION, MODEL_ID, OWNER_NAME, VOICE
+from .config import AWS_PROFILE, AWS_REGION, DEBUG_TRANSCRIPTS, MODEL_ID, OWNER_NAME, VOICE
 from .log import log
 
 CHUNK = audio.RATE * 2 // 50  # 20 ms of 16-bit mono
@@ -104,7 +104,10 @@ class CallAudioOutput:
             self.proc.kill()
             self.proc = audio.player()
         elif isinstance(event, BidiTranscriptBlockEvent):
-            log(f"[{event.role}] {event.transcript}")
+            if DEBUG_TRANSCRIPTS:
+                log(f"[{event.role}] {event.transcript}")
+            else:
+                log(f"[{event.role}] ({len(event.transcript)} chars)")
 
 
 async def converse(opening):

@@ -3,7 +3,7 @@ import re
 import subprocess
 import time
 
-from .config import OWNER_NUMBER, PHONE_SERIAL
+from .config import ANSWER_HIDDEN, OWNER_NUMBER, PHONE_SERIAL
 from .log import log
 
 
@@ -28,7 +28,8 @@ def adb(*args):
 
 def same_number(a, b):
     digits = lambda s: "".join(c for c in s if c.isdigit())
-    return digits(a)[-9:] == digits(b)[-9:]
+    da, db = digits(a), digits(b)
+    return len(da) >= 8 and len(db) >= 8 and da[-9:] == db[-9:]
 
 
 def call_state():
@@ -54,9 +55,12 @@ def answer():
             if call_state()[0] == 2:
                 log("answered with", key)
                 return True
-    # Last resort: tap the on-screen answer button.
-    adb("uiautomator", "dump", "/sdcard/ui.xml")
-    ui = adb("cat", "/sdcard/ui.xml")
+    # Last resort: tap the on-screen answer button. The dump goes to /data/local/tmp (only the adb
+    # shell user can write there, unlike /sdcard where other apps could swap the file).
+    dump = "/data/local/tmp/jarvis-ui.xml"
+    adb("uiautomator", "dump", dump)
+    ui = adb("cat", dump)
+    adb("rm", "-f", dump)
     for label in ("Responder", "Contestar", "Aceptar", "Answer"):
         m = re.search(rf'(?:text|content-desc)="{label}"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', ui)
         if m:
@@ -95,13 +99,15 @@ def wait_answered(timeout=45):
 
 
 def wait_owner_call():
-    """Block until the owner calls, answer it. Other numbers are ignored."""
+    """Block until the owner calls, answer it. Other numbers, and hidden ones, are ignored."""
     log("listening for calls from", OWNER_NUMBER)
     while True:
         state, num = call_state()
         if state == 1:
             log("ringing:", num or "(number hidden from adb)")
-            if num and not same_number(num, OWNER_NUMBER):
+            if not num and not ANSWER_HIDDEN:
+                log("hidden number -> ignoring (set JARVIS_ANSWER_HIDDEN=1 to answer these)")
+            elif num and not same_number(num, OWNER_NUMBER):
                 log("not owner -> ignoring")
             elif answer():
                 return

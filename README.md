@@ -103,7 +103,14 @@ JARVIS_PHONE_BT_ADDR=AA:BB:CC:DD:EE:FF
 AWS_PROFILE=mi-perfil               # vacío = cadena de credenciales por defecto
 AWS_REGION=us-east-1
 JARVIS_VOICE=carlos                 # o lupe
+JARVIS_ANSWER_HIDDEN=0              # 1 = atender también llamadas con número oculto (cualquiera)
+JARVIS_DEBUG_TRANSCRIPTS=0          # 1 = guardar en el log lo que se habla en cada llamada
 ```
+
+Por seguridad, Jarvis **no atiende** si adb no puede ver el número que llama: podría ser cualquiera.
+Si tu teléfono nunca muestra el número entrante por adb, el log dice `hidden number -> ignoring`;
+en ese caso podés activar `JARVIS_ANSWER_HIDDEN=1`, sabiendo que cualquiera con número privado podrá
+hablar con Jarvis.
 
 Verificá el acceso a Sonic:
 
@@ -139,7 +146,7 @@ mkdir -p ~/.config/systemd/user
 cp config/jarvis.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now jarvis
-journalctl --user -u jarvis -f      # ver las conversaciones
+journalctl --user -u jarvis -f      # ver el log (las conversaciones, solo con JARVIS_DEBUG_TRANSCRIPTS=1)
 loginctl enable-linger "$USER"      # que arranque aunque no inicies sesión
 ```
 

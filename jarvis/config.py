@@ -33,5 +33,15 @@ AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 MODEL_ID = os.environ.get("JARVIS_MODEL_ID", "amazon.nova-2-5-sonic")
 VOICE = os.environ.get("JARVIS_VOICE", "carlos")  # Spanish (es-US): carlos (masc.) / lupe (fem.)
 
+
+def _flag(name):
+    return os.environ.get(name, "").lower() in ("1", "true", "yes", "si", "sí")
+
+
+# Off by default: a call whose number adb can't see could be anyone, so it is not answered.
+ANSWER_HIDDEN = _flag("JARVIS_ANSWER_HIDDEN")
+# Off by default: transcripts are what you said on the phone; only log them when debugging.
+DEBUG_TRANSCRIPTS = _flag("JARVIS_DEBUG_TRANSCRIPTS")
+
 # PipeWire names the HFP streams bluez_input.<AA_BB_...> / bluez_output.<AA_BB_...>
 BT_NODE_ID = PHONE_BT_ADDR.replace(":", "_")
